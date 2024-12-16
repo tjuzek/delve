@@ -21,10 +21,10 @@ If you use this code or data in your research, please cite:
 
 "`
 @inproceedings{juzek2025why,
-  title={Multi-view and cross-view brain decoding},
-  author={Juzek, Tom S. and Ward, Zina B.},
-  booktitle={Why Does ChatGPT "Delve" So Much? Exploring the Sources of Lexical
+  title={Why Does ChatGPT "Delve" So Much? Exploring the Sources of Lexical
 Overrepresentation in Large Language Models},
+  author={Juzek, Tom S. and Ward, Zina B.},
+  booktitle={Proceedings of the 31st International Conference on Computational Linguistics},
   year={2025}
 }
 "`
