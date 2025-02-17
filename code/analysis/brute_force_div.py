@@ -1,88 +1,185 @@
-"""
-A module for identifying significant changes in word usage between two text corpora.
-
-Usage:
-    python brute_force_div.py --file2020 <file_path_2020> --file2024 <file_path_2024> --output <output_path>
-"""
-
-import sys
 import string
+from collections import Counter
 from scipy.stats import chi2_contingency
+from typing import Dict, Tuple, List
 
-# Code has been refactored using Copilot and ChatGPT
 
-def count_words(text):
+def count_words(lines: List[str]) -> Tuple[Dict[str, int], int]:
     """
-    Count the frequency of each word in the provided text.
-    
-    Args:
-    text (iterable): An iterable of strings (e.g., lines of text).
+    Count word frequencies in a list of text lines.
+    Lines are stripped of whitespace, lowercased, and stripped of punctuation.
     
     Returns:
-    tuple: A dictionary of word frequencies and the total number of words.
+        A tuple of:
+          - A dictionary mapping words to their counts.
+          - The total number of words.
     """
-    freq_dct = {}
+    translator = str.maketrans("", "", string.punctuation)
+    word_counter = Counter()
     total_words = 0
-    translator = str.maketrans('', '', string.punctuation)
-    
-    for line in text:
-        line = line.strip().lower().translate(translator)
-        words = line.split()
-        for word in words:
-            freq_dct[word] = freq_dct.get(word, 0) + 1
-            total_words += 1
-    
-    return freq_dct, total_words
 
-def chi_sq_test(word, data2020, data2024, total2020, total2024, min_opm):
+    for line in lines:
+        cleaned_line = line.strip().lower().translate(translator)
+        words = cleaned_line.split()
+        word_counter.update(words)
+        total_words += len(words)
+
+    return dict(word_counter), total_words
+
+
+def chi_sq_test_for_significance(
+    word: str,
+    freq_2020_abs: Dict[str, int],
+    freq_2024_abs: Dict[str, int],
+    total_words_2020: int,
+    total_words_2024: int,
+    min_opm_2020: float,
+) -> bool:
     """
-    Perform a chi-squared test to determine if the usage of 'word' is significantly different.
-    
-    Args:
-    word (str): The word to test.
-    data2020, data2024 (dict): Dictionaries of word frequencies for 2020 and 2024.
-    total2020, total2024 (int): Total words in 2020 and 2024.
-    min_opm (float): Minimum occurrences per million words for significance testing.
-    
-    Returns:
-    bool: True if the change in word usage is statistically significant.
+    Performs a chi-square test on the 2x2 contingency table for a given word,
+    using absolute frequencies from 2020 and 2024.
+
+    If the word did not occur in 2020, it uses min_opm_2020 as the count.
+    Returns True if the p-value is less than 0.05.
     """
-    if word in data2020:
-        observed = [data2020[word], total2020 - data2020[word]]
+    if word in freq_2020_abs:
+        count_2020 = freq_2020_abs[word]
+        count_2024 = freq_2024_abs[word]
+        data = [
+            [count_2020, total_words_2020 - count_2020],
+            [count_2024, total_words_2024 - count_2024],
+        ]
     else:
-        observed = [min_opm, total2020 - min_opm]
-    
-    expected = [data2024.get(word, 0), total2024 - data2024.get(word, 0)]
-    chi2, p_value, _, _ = chi2_contingency([observed, expected])
-    
+        count_2024 = freq_2024_abs[word]
+        data = [
+            [min_opm_2020, total_words_2020 - 1],
+            [count_2024, total_words_2024 - count_2024],
+        ]
+
+    _, p_value, _, _ = chi2_contingency(data)
     return p_value < 0.05
 
-if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python script.py <input_path2020> <input_path2024> <output_path>")
-        sys.exit(1)
-    
-    input_path2020 = sys.argv[1]
-    input_path2024 = sys.argv[2]
-    output_path = sys.argv[3]
 
-    with open(input_path2020, 'r', encoding='utf-8') as file:
-        freq2020, total2020 = count_words(file)
-    
-    with open(input_path2024, 'r', encoding='utf-8') as file:
-        freq2024, total2024 = count_words(file)
-    
-    freq_diff = {}
-    min_opm_2020 = 1000000 / total2020
-    
-    for word, freq in freq2024.items():
-        old_freq = freq2020.get(word, min_opm_2020)
-        freq_diff[word] = ((freq - old_freq) / old_freq) * 100
-    
-    sorted_diff = sorted(freq_diff.items(), key=lambda x: x[1], reverse=True)
-    
-    with open(output_path, 'w', encoding='utf-8') as file:
-        file.write("word\tchange (%)\topm 2020\topm 2024\tsignificant\n")
-        for word, change in sorted_diff:
-            is_significant = chi_sq_test(word, freq2020, freq2024, total2020, total2024, min_opm_2020)
-            file.write(f"{word}\t{change:.2f}\t{freq2020.get(word, min_opm_2020):.2f}\t{freq2024.get(word, 0):.2f}\t{is_significant}\n")
+def load_text_file(file_path: str) -> List[str]:
+    """
+    Reads a text file and returns a list of its lines.
+    """
+    with open(file_path, "r", encoding="utf-8") as f:
+        return f.readlines()
+
+
+def normalize_frequencies(freq: Dict[str, int], total_words: int, factor: int = 1_000_000) -> Dict[str, float]:
+    """
+    Converts word counts to occurrences per 'factor' words.
+    """
+    return {word: (count / total_words) * factor for word, count in freq.items()}
+
+
+def filter_frequencies(freq: Dict[str, float], threshold: float = 1.0) -> Dict[str, float]:
+    """
+    Returns a new dictionary containing only those words with a frequency
+    (per million words) greater than or equal to the threshold.
+    """
+    return {word: opm for word, opm in freq.items() if opm >= threshold}
+
+
+def calculate_frequency_difference(
+    freq_2020_norm: Dict[str, float],
+    freq_2024_norm: Dict[str, float],
+    min_opm_2020: float,
+) -> Dict[str, float]:
+    """
+    Calculates the percentage change in normalized frequency from 2020 to 2024
+    for each word that appears in the 2024 dataset.
+    """
+    diff = {}
+    for word, opm_2024 in freq_2024_norm.items():
+        if word in freq_2020_norm:
+            opm_2020 = freq_2020_norm[word]
+            change = ((opm_2024 - opm_2020) / opm_2020) * 100
+        else:
+            change = ((opm_2024 - min_opm_2020) / min_opm_2020) * 100
+        diff[word] = change
+    return diff
+
+
+def write_results(
+    output_file_path: str,
+    sorted_freq_diff: Dict[str, float],
+    freq_2020_norm: Dict[str, float],
+    freq_2024_norm: Dict[str, float],
+    freq_2020_abs: Dict[str, int],
+    freq_2024_abs: Dict[str, int],
+    total_words_2020: int,
+    total_words_2024: int,
+    min_opm_2020: float,
+) -> None:
+    """
+    Writes the results to a TSV file with columns for word, percentage change,
+    normalized frequencies for 2020 and 2024, and whether the change is significant.
+    """
+    header = "word\tchange (%)\topm 2020\topm 2024\tsignificant\n"
+    with open(output_file_path, "w", encoding="utf-8") as out_file:
+        out_file.write(header)
+        for word, change in sorted_freq_diff.items():
+            significant = chi_sq_test_for_significance(
+                word,
+                freq_2020_abs,
+                freq_2024_abs,
+                total_words_2020,
+                total_words_2024,
+                min_opm_2020,
+            )
+            opm_2020 = freq_2020_norm.get(word, min_opm_2020)
+            opm_2024 = freq_2024_norm[word]
+            out_file.write(f"{word}\t{change:.2f}\t{opm_2020:.2f}\t{opm_2024:.2f}\t{significant}\n")
+
+
+def main():
+    # File paths
+    file_path_2020 = "" # enter the path to your 2020 file
+    file_path_2024 = "" # enter the path to your 2024 file
+    output_file_path = "" # enter the path to your output file
+
+    # Load text files
+    text_2020 = load_text_file(file_path_2020)
+    text_2024 = load_text_file(file_path_2024)
+
+    # Count words and get total counts (absolute frequencies)
+    freq_2020_abs, total_words_2020 = count_words(text_2020)
+    freq_2024_abs, total_words_2024 = count_words(text_2024)
+
+    # Create normalized frequency dictionaries (occurrences per million words)
+    freq_2020_norm = normalize_frequencies(freq_2020_abs, total_words_2020)
+    freq_2024_norm = normalize_frequencies(freq_2024_abs, total_words_2024)
+
+    # Filter 2024 frequencies below threshold (less than 1 opm)
+    freq_2024_norm = filter_frequencies(freq_2024_norm, threshold=1.0)
+
+    # Minimum occurrences per million words in 2020 for a word not present
+    min_opm_2020 = 1_000_000 / total_words_2020
+
+    # Calculate frequency differences (percentage change)
+    freq_diff = calculate_frequency_difference(freq_2020_norm, freq_2024_norm, min_opm_2020)
+
+    # Sort the differences in descending order
+    sorted_freq_diff = dict(sorted(freq_diff.items(), key=lambda item: item[1], reverse=True))
+
+    # Write the results to file
+    write_results(
+        output_file_path,
+        sorted_freq_diff,
+        freq_2020_norm,
+        freq_2024_norm,
+        freq_2020_abs,
+        freq_2024_abs,
+        total_words_2020,
+        total_words_2024,
+        min_opm_2020,
+    )
+
+    print(total_words_2024)
+
+
+if __name__ == "__main__":
+    main()
