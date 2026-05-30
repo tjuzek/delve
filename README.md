@@ -36,3 +36,7 @@ CC BY-S
 
 ## Contact
 For any questions or issues, please contact Tom Juzek or Zina Ward.
+
+## AI Assistance
+
+Repository polished with Claude Code.
