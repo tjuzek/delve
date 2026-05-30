@@ -17,20 +17,22 @@ Scientific English is currently undergoing rapid change, with words like "delve,
 - Install required packages via pip
 
 ## Citation
-If you use this code or data in your research, please cite:
 
-"`
-@inproceedings{juzek2025why,
-  title={Why Does ChatGPT "Delve" So Much? Exploring the Sources of Lexical
-Overrepresentation in Large Language Models},
-  author={Juzek, Tom S. and Ward, Zina B.},
-  booktitle={Proceedings of the 31st International Conference on Computational Linguistics},
-  year={2025}
+If you use this code or data, a citation is appreciated (though not required; see the licence).
+
+```bibtex
+@inproceedings{juzek-ward-2025-delve,
+  title     = {Why Does ChatGPT "Delve" So Much? Exploring the Sources of Lexical Overrepresentation in Large Language Models},
+  author    = {Juzek, Tom S. and Ward, Zina B.},
+  booktitle = {Proceedings of the 31st International Conference on Computational Linguistics (COLING 2025)},
+  year      = {2025},
+  pages     = {6397--6411},
+  url       = {https://aclanthology.org/2025.coling-main.426/}
 }
-"`
+```
 
 ## Licence
 CC BY-S
 
 ## Contact
-For any questions or issues, please contact Tom Juzek or Zina Ward. 
+For any questions or issues, please contact Tom Juzek or Zina Ward.
