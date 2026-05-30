@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this work, a citation is appreciated (though not required; see the licence)."
+title: "delve: code and data for the COLING 2025 paper on lexical overrepresentation in LLMs"
+type: software
+authors:
+  - family-names: "Juzek"
+    given-names: "Tom S."
+    orcid: "https://orcid.org/0000-0002-3204-3879"
+  - family-names: "Ward"
+    given-names: "Zina B."
+repository-code: "https://github.com/tjuzek/delve"
+preferred-citation:
+  type: conference-paper
+  title: "Why Does ChatGPT \"Delve\" So Much? Exploring the Sources of Lexical Overrepresentation in Large Language Models"
+  authors:
+    - family-names: "Juzek"
+      given-names: "Tom S."
+      orcid: "https://orcid.org/0000-0002-3204-3879"
+    - family-names: "Ward"
+      given-names: "Zina B."
+  year: 2025
+  collection-title: "Proceedings of the 31st International Conference on Computational Linguistics (COLING 2025)"
+  start: 6397
+  end: 6411
+  url: "https://aclanthology.org/2025.coling-main.426/"
