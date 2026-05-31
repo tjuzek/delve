@@ -38,6 +38,8 @@ If you use this code or data, a citation is appreciated (though not required; se
 
 **Note on data.** The files in `data/` are small samples of PubMed abstracts, included for research. The full datasets are not redistributed here; they are rebuilt locally from PubMed, arXiv, and Wikipedia using the scripts in `code/get_human_data/` and `code/other_datasets/`. The CC0 dedication covers our own contributions (the focal-word analyses, generated abstracts, tables, plots, and the rating-study code); the underlying source texts remain under their respective terms.
 
+The included paper PDF remains under its own terms (CC BY 4.0; COLING 2025, ACL Anthology), separate from the code and data licences above.
+
 ## Contact
 For any questions or issues, please contact Tom Juzek or Zina Ward.
 
